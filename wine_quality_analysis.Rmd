@@ -41,8 +41,8 @@ options(repos = c(CRAN = "https://cloud.r-project.org"))
 
 #Install the following libraries if required
 # List of required packages
-required_pkgs <- c("tidyverse", "knitr", "janitor", "skimr", "glue",
-                   "keras", "rsample", "recipes", "yardstick") 
+required_pkgs <- c("tidyverse", "knitr", "janitor", "skimr", "glue", "keras", 
+                   "rsample", "recipes", "yardstick") 
 
 # Install and load each package
 for (pkg in required_pkgs) {
@@ -53,7 +53,7 @@ for (pkg in required_pkgs) {
 }
 
 # Data path
-data_path <- "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
+# data_path <- "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
 
 theme_set(theme_test(base_size = 14))
 options(dplyr.summarise.inform = FALSE)
@@ -94,18 +94,29 @@ Build a neural network model that predicts wine quality scores using physicochem
 # **Data Understanding**
 ## Load Data
 ```{r load-data}
-wine_data <- read_csv(data_path, col_names = TRUE, show_col_types = FALSE)
-glimpse(wine_data)
-head(wine_data, 10)
+wine.df <- read.csv("resources/wine.csv")
+```
+## Initial Data Exploration
+Display the first 10 rows of the dataset to understand its structure and contents.
+```{r head-data}
+head(wine.df, 10)
 ```
 
-## Target Variable Check
-```{r target-variable}
-stopifnot("quality" %in% names(wine_data))
-
-summary(wine_data$quality)
-kable(wine_data$quality)
-
+View the data structure
+```{r str-data}
+glimpse(wine.df)
 ```
 
+## Data Summary
+Provide a summary of the dataset to get an overview of the variables and their distributions.
+```{r summary-data}
+summary(wine.df)
+```
+
+## Missing Values
+Check for missing values in the dataset.
+```{r missing-values}
+colSums(is.na(wine.df))
+```
+  
 ##
