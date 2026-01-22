@@ -1,3 +1,3 @@
-[![Project Cover](resources/template.png)](iris_cluster_analysis.pdf)
+[![Project Cover](resources/template.png)](wine_quality_analysis.pdf)
 
 # Wine Quality Analysis
