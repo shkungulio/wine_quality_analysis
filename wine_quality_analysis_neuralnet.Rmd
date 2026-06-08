@@ -281,32 +281,80 @@ baseline_tbl %>%
   )
 ```
 
-```{r end-document, include=FALSE}
-knitr::knit_exit()
-```
-
-
-
 ## Neural Network Model (Regression)
 ```{r neural-network-model}
-keras::k_clear_session()
+# neuralnet expects a data.frame with numeric columns and a formula
+train_nn <- train_processed |> as.data.frame()
+val_nn   <- val_processed   |> as.data.frame()
+test_nn  <- test_processed  |> as.data.frame()
 
-model <- keras_model_sequential() %>%
-  layer_dense(units = 64, activation = 'relu', input_shape = ncol(x_train)) %>%
-  layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 32, activation = 'relu') %>%
-  layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 16, activation = 'relu') %>%
-  layer_dense(units = 1, activation = 'linear')
-model %>% compile(
-  loss = 'mse',
-    optimizer = optimizer_adam(),
-    metrics = list('mean_absolute_error')
+set.seed(123)
+
+# Fit a feed-forward neural network for regression
+# Note: smaller hidden layers keep training stable and fast on this dataset.
+nn_fit <- neuralnet::neuralnet(
+  quality ~ .,
+  data = train_nn,
+  hidden = c(10, 5),
+  linear.output = TRUE,
+  lifesign = "minimal",
+  stepmax = 1e6
 )
 
-model
+#nn_fit
 ```
 
+## Predictions and Performance
+```{r nn-predict-evaluate}
+# Predict on validation and test sets
+val_pred  <- neuralnet::compute(nn_fit, val_nn  |> dplyr::select(-quality))$net.result[, 1]
+test_pred <- neuralnet::compute(nn_fit, test_nn |> dplyr::select(-quality))$net.result[, 1]
+
+val_metrics <- tibble(truth = val_nn$quality, estimate = val_pred) |>
+  summarise(
+    RMSE = yardstick::rmse_vec(truth, estimate),
+    MAE  = yardstick::mae_vec(truth, estimate)
+  )
+
+test_metrics <- tibble(truth = test_nn$quality, estimate = test_pred) |>
+  summarise(
+    RMSE = yardstick::rmse_vec(truth, estimate),
+    MAE  = yardstick::mae_vec(truth, estimate)
+  )
+
+list(Validation = val_metrics, Test = test_metrics)
+```
+
+## Diagnostic Plots
+```{r nn-diagnostics}
+# Actual vs Predicted (Test)
+plot_tbl <- tibble(
+  truth = test_nn$quality,
+  estimate = test_pred,
+  residual = test_nn$quality - test_pred
+)
+
+p1 <- ggplot(plot_tbl, aes(x = truth, y = estimate)) +
+  geom_point(alpha = 0.6) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(
+    title = "Neural Network: Actual vs Predicted (Test)",
+    x = "Actual Quality",
+    y = "Predicted Quality"
+  )
+
+p2 <- ggplot(plot_tbl, aes(x = estimate, y = residual)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    title = "Residuals vs Predicted (Test)",
+    x = "Predicted Quality",
+    y = "Residual (Actual - Predicted)"
+  )
+
+p1
+p2
+```
 <!-- ```{r end-document, include=FALSE} -->
 <!-- knitr::knit_exit() -->
 <!-- ``` -->
@@ -327,13 +375,8 @@ model
 \newpage
 
 # **References**
-1. UCI Machine Learning Repository: Wine Quality Data Set. Available at: https://archive
-.ics.uci.edu/ml/datasets/wine+quality
-2. Chollet, F. (2018). Deep Learning with R. Manning Publications.
-3. Kuhn, M., & Johnson, K. (2019). Feature Engineering and
- Selection: A Practical Approach for Predictive Models. CRC Press.
-4. Wickham, H., et al. (2019). Welcome to the Tidy
-verse. Journal of Open Source Software, 4(43), 1686.
-5. Allaire, J., et al. (2024). R Markdown: The Definitive Guide. Chapman and Hall/CRC.
-6. Geron, A. (2019). Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow. O'Reilly Media.
-
+1. UCI Machine Learning Repository: Wine Quality Data Set. https://archive.ics.uci.edu/ml/datasets/wine+quality
+2. Fritsch, S., & Guenther, F. (2019). *neuralnet: Training of Neural Networks*. R package.
+3. Kuhn, M., & Johnson, K. (2019). *Feature Engineering and Selection: A Practical Approach for Predictive Models*. CRC Press.
+4. Wickham, H., et al. (2019). *Welcome to the tidyverse*. Journal of Open Source Software, 4(43), 1686.
+5. Allaire, J., et al. (2024). *R Markdown: The Definitive Guide*. Chapman and Hall/CRC.
